@@ -1,9 +1,7 @@
 #define _GNU_SOURCE
 
-#include <arpa/inet.h>
 #include <dlfcn.h>
 #include <errno.h>
-#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,11 +53,19 @@ int socket(int domain, int type, int protocol) {
   if (fd < 0)
     return fd;
 
+  /*
+   * Save errno before calling setsockopt and fprintf so that a failure here
+   * (e.g. EPERM when CAP_NET_ADMIN is absent) is not leaked to the caller.
+   * Marking is best-effort: the socket is still valid and returned.
+   */
+  int saved_errno = errno;
+
   if (setsockopt(fd, SOL_SOCKET, SO_MARK, &socket_mark, sizeof(socket_mark)) <
       0) {
     fprintf(stderr, "[Socket Marker] setsockopt(fd=%d, mark=%u) failed: %m\n",
             fd, socket_mark);
   }
 
+  errno = saved_errno;
   return fd;
 }
