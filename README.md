@@ -65,12 +65,16 @@ sudo SO_MARK=100 LD_PRELOAD=$PWD/setmark.so curl https://example.com
 ```
 
 ```bash
-sudo SO_MARK=4611 LD_PRELOAD=$PWD/setmark.so ping 1.1.1.1
+sudo SO_MARK=4611 LD_PRELOAD=$PWD/setmark.so dig arash-hatami.ir
 ```
 
 The mark can be any value in the range `0`–`4294967295` (`UINT32_MAX`).
 An invalid value (non-numeric, negative, out of range) is rejected and the
 default mark is used instead; a warning is printed to stderr.
+
+> [!Note]
+> This library is for using alongside programs that do not have native support for `SO_MARK`. For example, `ping` (from `iputils`) supports `SO_MARK` via its `-m` option, so you can simply run `ping -m 100 <destination>` without needing this library.
+> Or `mtr` has `-M` option.
 
 ## Policy Routing Example
 
@@ -148,12 +152,12 @@ tcpdump -i any -n
 
 ## Limitations
 
-| Limitation | Reason |
-|---|---|
-| Statically linked binaries | `LD_PRELOAD` is a dynamic-linker feature |
-| Setuid / setgid binaries | Linux drops `LD_PRELOAD` for security |
-| Sockets created before library load | Only new `socket()` calls are intercepted |
-| No `CAP_NET_ADMIN` | `setsockopt(SO_MARK)` fails with `EPERM`; the socket is still returned to the caller |
+| Limitation                          | Reason                                                                               |
+| ----------------------------------- | ------------------------------------------------------------------------------------ |
+| Statically linked binaries          | `LD_PRELOAD` is a dynamic-linker feature                                             |
+| Setuid / setgid binaries            | Linux drops `LD_PRELOAD` for security                                                |
+| Sockets created before library load | Only new `socket()` calls are intercepted                                            |
+| No `CAP_NET_ADMIN`                  | `setsockopt(SO_MARK)` fails with `EPERM`; the socket is still returned to the caller |
 
 A dynamically linked binary can be checked with:
 
@@ -174,7 +178,7 @@ LD_PRELOAD=$PWD/setmark.so env | grep LD_PRELOAD
 
 The library always prints a line to stderr on load, e.g.:
 
-```
+```text
 [Socket Marker] Initialized (mark=100)
 ```
 
@@ -185,8 +189,8 @@ If this line does not appear, the library was not loaded.
 `setsockopt(SO_MARK)` requires `CAP_NET_ADMIN`. Without it, the library logs
 a warning per socket but the application continues to run normally:
 
-```
-[Socket Marker] setsockopt(fd=3, mark=100) failed: Operation not permitted
+```text
+[Socket Marker] setsockopt(fd=3, mark=100) failed: Operation not permitted (domain=2 type=2 proto=0)
 ```
 
 Run with `sudo` or grant the binary `CAP_NET_ADMIN`:
@@ -194,6 +198,29 @@ Run with `sudo` or grant the binary `CAP_NET_ADMIN`:
 ```bash
 sudo setcap cap_net_admin+ep <binary>
 ```
+
+**`ping` reports a marking failure for one socket but still works:**
+
+`ping` (from `iputils`) drops `CAP_NET_ADMIN` from its effective capability set
+early in startup. However, ICMP ping sockets (`SOCK_DGRAM + IPPROTO_ICMP`) are
+granted a special kernel flag (`SOCK_MARK_ALLOW`) that allows `SO_MARK` to be
+set on them without `CAP_NET_ADMIN`. The failure you see is from a secondary
+**UDP** socket (`proto=0`) that ping uses internally to determine the source IP
+address — not from the socket that carries ICMP traffic.
+
+```text
+[Socket Marker] Initialized (mark=4611)
+[Socket Marker] setsockopt(fd=5, mark=4611) failed: Operation not permitted (domain=2 type=2 proto=0)
+```
+
+The key ICMP socket (`proto=1`) is marked correctly and ping traffic **is**
+routed via the correct routing table. You can verify with:
+
+```bash
+ss -tupne | grep ping
+```
+
+The `fwmark` column should show your configured mark value.
 
 **Check current capabilities:**
 

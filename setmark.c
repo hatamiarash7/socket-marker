@@ -62,8 +62,10 @@ int socket(int domain, int type, int protocol) {
 
   if (setsockopt(fd, SOL_SOCKET, SO_MARK, &socket_mark, sizeof(socket_mark)) <
       0) {
-    fprintf(stderr, "[Socket Marker] setsockopt(fd=%d, mark=%u) failed: %m\n",
-            fd, socket_mark);
+    fprintf(stderr,
+            "[Socket Marker] setsockopt(fd=%d, mark=%u) failed: %m"
+            " (domain=%d type=%d proto=%d)\n",
+            fd, socket_mark, domain, type, protocol);
   }
 
   errno = saved_errno;

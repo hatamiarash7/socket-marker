@@ -1,8 +1,12 @@
 {
   "cSpell.words": [
     "capsh",
+    "CFLAGS",
+    "EPERM",
+    "errno",
     "fwmark",
     "libc",
+    "setcap",
     "setgid",
     "setmark",
     "setsockopt",
