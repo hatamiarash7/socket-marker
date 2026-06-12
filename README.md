@@ -1,5 +1,7 @@
 # Socket Marker
 
+[![Tests](https://github.com/hatamiarash7/socket-marker/actions/workflows/ci.yml/badge.svg)](https://github.com/hatamiarash7/socket-marker/actions/workflows/ci.yml) [![GitHub License](https://img.shields.io/github/license/hatamiarash7/socket-marker)](https://github.com/hatamiarash7/socket-marker/blob/main/LICENSE)
+
 A lightweight `LD_PRELOAD` library that automatically applies a Linux `SO_MARK` to every socket created by an application, without modifying the application.
 
 Typical use-cases:
