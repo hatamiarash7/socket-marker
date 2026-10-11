@@ -2,9 +2,11 @@
   "cSpell.words": [
     "capsh",
     "CFLAGS",
+    "DGRAM",
     "EPERM",
     "errno",
     "fwmark",
+    "IPPROTO",
     "libc",
     "setcap",
     "setgid",
